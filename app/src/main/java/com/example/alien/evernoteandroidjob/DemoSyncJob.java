@@ -19,6 +19,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.Task;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,34 +63,41 @@ public class DemoSyncJob extends Job {
             @Override
             public void run() {
                 Looper.prepare();
+                final int UPDATE_INTERVAL = 5000;
+                final int UPDATE_FASTEST_INTERVAL = 2000;
+                final int UPDATE_MIN_DISTANCE = 10;
+                final String TAG = "job_demo_tag";
 
-                mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
+                FusedLocationProviderClient mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
+                LocationRequest mLocationRequest = new LocationRequest();
                 mLocationRequest.setInterval(UPDATE_INTERVAL);
                 mLocationRequest.setFastestInterval(UPDATE_FASTEST_INTERVAL);
                 mLocationRequest.setSmallestDisplacement(UPDATE_MIN_DISTANCE);
                 mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
+                Log.d(TAG, "onRunJob: ");
                 try {
                     if (ContextCompat.checkSelfPermission(getContext(),
                             Manifest.permission.ACCESS_FINE_LOCATION)
                             == PackageManager.PERMISSION_GRANTED) {
                         Log.d(TAG, "onRunJob: PERMISSION_GRANTED ---------------------------------------------------------------------------------");
-                        //mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-                        mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest, new LocationCallback() {
-                            @Override
-                            public void onLocationResult(LocationResult locationResult) {
-                                Log.d(TAG, "onLocationResult: ");
-                            }
-
-                            @Override
-                            public void onLocationAvailability(LocationAvailability locationAvailability) {
-                                Log.d(TAG, "onLocationAvailability: ");
-                            }
-                        }, Looper.myLooper());
+                        Task<Location> resTask = mFusedLocationProviderClient.getLastLocation();
+                        int sleepCount = 0;
+                        while (!resTask.isComplete() && sleepCount < 300) {
+                            Thread.sleep(100);
+                            Log.d(TAG, "getLocation: sleep");
+                            sleepCount++;
+                        }
+                        Log.d(TAG, "getLocation: " + resTask.getResult().toString());
+                        mDoneSignal.countDown();
                     }
                 } catch (Throwable e) {
                     Log.d(TAG, "onRunJob: " + e.getMessage());
                     e.printStackTrace();
+                }
+                try {
+                    //  mDoneSignal.await(30, TimeUnit.SECONDS);
+                } catch (Throwable throwable) {
+                    throwable.printStackTrace();
                 }
             }
         }.start();

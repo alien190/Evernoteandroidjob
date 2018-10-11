@@ -50,8 +50,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         JobManager.instance().cancelAll();
         //schedulePeriodicJob();
-        //scheduleOneTimeJob();
-        getLocation();
+        scheduleOneTimeJob();
+        //getLocation();
     }
 
     private void schedulePeriodicJob() {
