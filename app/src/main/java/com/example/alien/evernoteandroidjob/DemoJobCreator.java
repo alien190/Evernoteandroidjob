@@ -12,8 +12,8 @@ public class DemoJobCreator implements JobCreator {
     @Nullable
     public Job create(@NonNull String tag) {
         switch (tag) {
-            case DemoSyncJob.TAG:
-                return new DemoSyncJob();
+            case LocationJob.TAG:
+                return new LocationJob();
             default:
                 return null;
         }
